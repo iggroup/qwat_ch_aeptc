@@ -71,14 +71,17 @@ fi
 
 if [[ "$DROPSCHEMA" -eq 1 ]]; then
 	psql service=${PGSERVICE} -v ON_ERROR_STOP=1 \
-         -c "DROP SCHEMA IF EXISTS qwat_ch_vd_sire CASCADE"
+         -c "DROP SCHEMA IF EXISTS qwat_ch_aeptcc CASCADE"
 fi
 
 # create the qwat_ch_vd_sire schema
-psql service=$PGSERVICE -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS qwat_ch_vd_sire"
+psql service=$PGSERVICE -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS qwat_ch_aeptcc"
+
+# add the ch_aept tables
+# psql service=$PGSERVICE -v ON_ERROR_STOP=1 -v SRID=$SRID -f ${DIR}/aeptc_tables.sql
 
 # add the ch_vd_sire columns
-psql service=$PGSERVICE -v ON_ERROR_STOP=1 -v SRID=$SRID -f ${DIR}/sire_columns.sql
+psql service=$PGSERVICE -v ON_ERROR_STOP=1 -v SRID=$SRID -f ${DIR}/aeptc_columns.sql
 
 # re-create the QWAT views, for the new ch_vd_sire columns to be taken into account
 QWAT_REPO="$(git rev-parse --show-toplevel)/qwat-data-model"

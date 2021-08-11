@@ -1,8 +1,9 @@
 
-DROP VIEW IF EXISTS qwat_ch_vd_sire.conduite;
-DROP VIEW IF EXISTS qwat_ch_vd_sire.vanne_clapet;
-DROP VIEW IF EXISTS qwat_ch_vd_sire.regulation_pression;
-DROP VIEW IF EXISTS qwat_ch_vd_sire.station_pompage;
-DROP VIEW IF EXISTS qwat_ch_vd_sire.station_traitement;
-DROP VIEW IF EXISTS qwat_ch_vd_sire.reservoir;
-DROP VIEW IF EXISTS qwat_ch_vd_sire.captage;
+DROP VIEW IF EXISTS qwat_ch_aeptc.autres_installations;
+DROP VIEW IF EXISTS qwat_ch_aeptc.canalisation;
+DROP VIEW IF EXISTS qwat_ch_aeptc.captage_d_eaux_de_surface;
+DROP VIEW IF EXISTS qwat_ch_aeptc.captage_d_eaux_souterraines;
+DROP VIEW IF EXISTS qwat_ch_aeptc.chambre_de_captage;
+DROP VIEW IF EXISTS qwat_ch_aeptc.installation_de_transport;
+DROP VIEW IF EXISTS qwat_ch_aeptc.reservoir;
+DROP VIEW IF EXISTS qwat_ch_aeptc.source;
