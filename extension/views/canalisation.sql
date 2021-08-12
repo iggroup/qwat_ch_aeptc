@@ -4,16 +4,16 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 		pipe.id AS "Identificateur",
 		pipe.id AS "Nom",
 		remark AS "Remarque",
-		pipe.qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau AS "Identificateur_de_la_partie_de_reseau",
-		pipe.fk_pressurezone  AS "Nom_Zone_Pression",
+		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		--  Attributs de Canalisation
-		st_force2d(geometry) AS "Geometrie",
+		st_force2d(pipe.geometry) AS "Geometrie",
 		CASE
 			WHEN pipe_material.diameter_nominal IS NOT NULL THEN pipe_material.diameter_nominal
 			ELSE -1
 		END AS "Largeur_nominale" --  en mm
 	FROM qwat_od.pipe pipe
 	LEFT JOIN qwat_vl.pipe_material pipe_material on pipe.fk_material = pipe_material.id
+	LEFT JOIN qwat_od.pressurezone pressurezone on pipe.fk_pressurezone = pressurezone.id
 	WHERE fk_function IN (
 		--101,-- "autre"
 		--102,--  "inconnu"

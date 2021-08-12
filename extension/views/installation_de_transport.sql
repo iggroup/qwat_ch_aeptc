@@ -2,16 +2,18 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.installation_de_transport AS
 	SELECT
 		-- AEPT Attributs de base
 		installation.id AS "Identificateur",
-		name AS "Nom",
+		installation.name AS "Nom",
 		installation_transport.qwat_ext_ch_aeptc_remarque AS "Remarque",
-		installation_transport.qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau AS "Identificateur_de_la_partie_de_reseau",
-		node.fk_pressurezone AS "Nom_Zone_Pression",
+		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de Installation_de_transport
 		alimentation.value_fr AS "Alimentation_electrique_de_secours",
 		type.value_fr AS "Type",
 		traitement.value_fr AS "Traitement",
 		qwat_ext_ch_aeptc_puissance_continue AS "Puissance_continue",
-		rejected_flow AS "Volume_transporte",
+		CASE 
+			WHEN rejected_flow IS NULL THEN -1 
+			ELSE -rejected_flow 
+		END AS "Volume_transporte",
 		st_force2d(node.geometry) AS "Geometrie",
 		qwat_ext_ch_aeptc_puissance_max AS "Puissance_max",
 		no_pumps AS "Nbre_de_pompes",
@@ -22,6 +24,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.installation_de_transport AS
 	LEFT JOIN qwat_vl.aeptc_installation_transport_type type on installation_transport.qwat_ext_ch_type_installation_transport = type.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on installation_transport.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE installation_transport.id IS NOT NULL;
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.installation_de_transport TO qwat_viewer;

@@ -2,25 +2,44 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	SELECT
 		-- AEPT Attributs de base
 		installation.id AS "Identificateur",
-		name AS "Nom",
+		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
-		source.qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau AS "Identificateur_de_la_partie_de_reseau",
-		node.fk_pressurezone AS "Nom_Zone_Pression",
+		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- sources
+		
 		type_captage.value_fr AS "Type_de_captage",
 		type_aquifere.value_fr AS "Type_d_aquifere",
-		aept.value_fr AS "Approvisionnement_en_temps_de_crise",
-		utilisation.value_fr AS "Utilisation",
-		interet_public.value_fr AS "Interet_public",
+		CASE
+			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
+			ELSE aept.value_fr 
+		END AS "Approvisionnement_en_temps_de_crise",
+		CASE 
+			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
+			ELSE utilisation.value_fr 
+		END AS "Utilisation",
+		CASE
+			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
+			ELSE interet_public.value_fr 
+		END AS "Interet_public",
 		qwat_ext_ch_aeptc_type_source AS "Type_de_source", --type de source considéré (exsurgence, puits artésien, etc.) ou son mode de fonctionnement (source pérenne,intermittente, périodique, etc.).
-		flow_lowest AS "Debit_min",
-		flow_average AS "Debit_moy",
+		CASE 
+			WHEN flow_lowest IS NULL THEN -1 
+			ELSE flow_lowest 
+		END AS "Debit_min",
+		flow_average  AS "Debit_moy",
 		qwat_ext_ch_aeptc_debit_max AS "Debit_max",
 		CASE
-			WHEN installation.fk_watertype = 1502 THEN 'Oui'
-			ELSE 'Non'
+			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
+			ELSE 
+				CASE 
+					WHEN installation.fk_watertype = 1502 THEN 'Oui'
+					ELSE 'Non'
+				END
 		END AS "Eau_potable",
-		watertype.value_fr AS "Utilisation_visee", -- eau potable, eau d’usage industriel, arrosage, utilisation thermique, etc.
+		CASE
+			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
+			ELSE watertype.value_fr 
+		END AS "Utilisation_visee", -- eau potable, eau d’usage industriel, arrosage, utilisation thermique, etc.
 		st_force2d(node.geometry) AS "Geometrie"
 	FROM qwat_od.installation installation
 	LEFT JOIN qwat_od.source source on installation.id = source.id
@@ -31,6 +50,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet interet_public on source.qwat_ext_ch_aeptc_interet_public = interet_public.id
 	LEFT JOIN qwat_vl.watertype watertype ON installation.fk_watertype = watertype.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE source.id IS NOT NULL;
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.source TO qwat_viewer;

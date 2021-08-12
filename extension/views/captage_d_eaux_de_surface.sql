@@ -2,10 +2,9 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 	SELECT
 		-- AEPT Attributs de base
 		installation.id AS "Identificateur",
-		name AS "Nom",
+		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
-		source.qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau AS "Identificateur_de_la_partie_de_reseau",
-		node.fk_pressurezone AS "Nom_Zone_Pression",
+		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de captages
 		traitement.value_fr AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie",
@@ -28,6 +27,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on source.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_vl.aeptc_utilisation utilistation on source.qwat_ext_ch_aeptc_utilisation = utilistation.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE source.fk_source_type = 2701 --captage lac
 	OR source.fk_source_type = 2704; --captage cours eau
 

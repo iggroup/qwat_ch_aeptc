@@ -5,7 +5,6 @@ ALTER TABLE qwat_od.tank ADD COLUMN qwat_ext_ch_aeptc_alimentation_electrique_de
 -- attributs communs aux installations QWAT
 ALTER TABLE qwat_od.tank ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_od.tank ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
-ALTER TABLE qwat_od.tank ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);
 
 -- AEPT Autres_installations
 ----------------------------
@@ -13,11 +12,9 @@ ALTER TABLE qwat_od.tank ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_parti
 -- attributs communs aux installations QWAT
 ALTER TABLE qwat_ch_aeptc.puit ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_ch_aeptc.puit ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
-ALTER TABLE qwat_ch_aeptc.puit ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);
 
 ALTER TABLE qwat_od.pressurecontrol ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_od.pressurecontrol ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
-ALTER TABLE qwat_od.pressurecontrol ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);
 
 -- AEPT Sources
 ---------------
@@ -31,7 +28,6 @@ ALTER TABLE qwat_od.source ADD COLUMN qwat_ext_ch_aeptc_debit_max real;
 -- attributs communs aux installations QWAT
 ALTER TABLE qwat_od.source ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_od.source ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
-ALTER TABLE qwat_od.source ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);
 
 -- AEPT Captage d'eaux souterraines
 -----------------------------------
@@ -53,7 +49,6 @@ ALTER TABLE qwat_od.chamber ADD COLUMN qwat_ext_ch_aeptc_type_chambre_captage in
 -- attributs communs aux installations QWAT
 ALTER TABLE qwat_od.chamber ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_od.chamber ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
-ALTER TABLE qwat_od.chamber ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);
 
 -- AEPT Installations de transport
 ----------------------------------
@@ -65,8 +60,3 @@ ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_descriptif_pompe varchar(2
 -- attributs communs aux installations QWAT
 ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
-ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);
-
-
--- AEPT canalisation
-ALTER TABLE qwat_od.pipe ADD COLUMN qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau varchar(50);

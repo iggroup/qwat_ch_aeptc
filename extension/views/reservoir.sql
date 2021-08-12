@@ -2,22 +2,31 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.reservoir AS
 	SELECT
 		-- AEPT Attributs de base
 		installation.id AS "Identificateur",
-		name AS "Nom",
+		installation.name AS "Nom",
 		tank.qwat_ext_ch_aeptc_remarque AS "Remarque",
-		tank.qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau AS "Identificateur_de_la_partie_de_reseau",
-		node.fk_pressurezone AS "Nom_Zone_Pression",
+		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de Reservoir
 		alimentation.value_fr AS "Alimentation_electrique_de_secours",
 		traitement.value_fr AS "Traitement",
-		storage_supply AS "Reserve_d_utilisation",
+		CASE 
+			WHEN storage_supply IS NULL THEN -1 
+			ELSE storage_supply
+		END AS "Reserve_d_utilisation",
 		st_force2d(node.geometry) AS "Geometrie",
-		storage_fire AS "Reserve_d_extinction",
-		altitude_overflow AS "Niveau_max_de_la_surface_de_l_eau"
+		CASE 
+			WHEN storage_fire IS NULL THEN -1
+			ELSE storage_fire
+		END AS "Reserve_d_extinction",
+		CASE 
+			WHEN altitude_overflow IS NULL THEN -1
+			ELSE altitude_overflow
+		END AS "Niveau_max_de_la_surface_de_l_eau"
 	FROM qwat_od.installation installation
 	LEFT JOIN qwat_od.tank tank on installation.id = tank.id
 	LEFT JOIN qwat_vl.aeptc_alimentation_electrique_alternative alimentation on tank.qwat_ext_ch_aeptc_alimentation_electrique_de_secours = alimentation.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on tank.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE tank.id IS NOT NULL;
 	
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.reservoir TO qwat_viewer;

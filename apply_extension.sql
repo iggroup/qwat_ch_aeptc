@@ -505,7 +505,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 		name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		source.qwat_ext_ch_aeptc_identificateur_de_la_partie_de_reseau AS "Identificateur_de_la_partie_de_reseau",
-		node.fk_pressurezone AS "Nom_Zone_Pression",
+		pressurezone.name AS "Nom_Zone_Pression",
 		-- sources
 		type_captage.value_fr AS "Type_de_captage",
 		type_aquifere.value_fr AS "Type_d_aquifere",
@@ -531,6 +531,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet interet_public on source.qwat_ext_ch_aeptc_interet_public = interet_public.id
 	LEFT JOIN qwat_vl.watertype watertype ON installation.fk_watertype = watertype.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.pressurezone pressurezone on fk_pressurezone = pressurezone.id
 	WHERE source.id IS NOT NULL;
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.source TO qwat_viewer;
