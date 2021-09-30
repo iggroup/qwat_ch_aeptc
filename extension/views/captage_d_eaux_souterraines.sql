@@ -6,19 +6,18 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de captages
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie",
-		aept.value_fr AS "Approvisionnement_en_temps_de_crise",
+		COALESCE(aept.value_fr, 'Indetermine') AS "Approvisionnement_en_temps_de_crise",
 		CASE
 			WHEN installation.fk_watertype = 1502 THEN 'Oui'
 			ELSE 'Non'
 		END AS "Eau_potable",
 		-- Attributs captages souterrain
 		source.qwat_ext_ch_aeptc_souterrain_diametre AS "Diametre",
-		type_captage.value_fr AS "Type_de_captage",
-		utilisation.value_fr AS "Utilisation",
+		COALESCE(type_captage.value_fr, 'Captee.Indetermine') AS "Type_de_captage",
+		COALESCE(utilisation.value_fr, 'Indetermine') AS "Utilisation",
 		flow_concession AS "Debit_de_concession"
-
 	FROM qwat_od.installation installation
 	LEFT JOIN qwat_od.source source on installation.id = source.id
 	LEFT JOIN qwat_vl.aeptc_type_captage_souterrain type_captage on source.qwat_ext_ch_aeptc_type_captage_souterrain = type_captage.id
@@ -26,8 +25,21 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on source.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_vl.aeptc_utilisation utilisation on source.qwat_ext_ch_aeptc_utilisation = utilisation.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE source.fk_source_type = 2702; --captage eau nappe
+	WHERE source.fk_source_type IN (2702, 2703) --captage eau nappe, captage eau source
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.captage_d_eaux_souterraines TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.captage_d_eaux_souterraines TO qwat_user;

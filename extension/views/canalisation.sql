@@ -7,10 +7,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		--  Attributs de Canalisation
 		st_force2d(pipe.geometry) AS "Geometrie",
-		CASE
-			WHEN pipe_material.diameter_nominal IS NOT NULL THEN pipe_material.diameter_nominal
-			ELSE -1
-		END AS "Largeur_nominale" --  en mm
+		COALESCE(pipe_material.diameter_nominal, diameter::int, -1) AS "Largeur_nominale" --  en mm
 	FROM qwat_od.pipe pipe
 	LEFT JOIN qwat_vl.pipe_material pipe_material on pipe.fk_material = pipe_material.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on pipe.fk_pressurezone = pressurezone.id
@@ -32,8 +29,8 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 		--4112,--  "Ventilation"
 	) AND fk_status IN (
 		--101, -- "autre"
-		--102, -- "inconnu"
-		--103, -- "à déterminer"
+		102, -- "inconnu"
+		103, -- "à déterminer"
 		1301 -- "en service"
 		--1302, -- "hors service"
 		--1303, -- "désaffecté"
@@ -41,7 +38,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 		--1305, -- "détruit"
 		--1306, -- "projet"
 		--1307, -- "fictif"
-	);
+	) AND fk_watertype = 1502;
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.canalisation TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.canalisation TO qwat_user;

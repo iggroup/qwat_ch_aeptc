@@ -6,9 +6,8 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- sources
-		
-		type_captage.value_fr AS "Type_de_captage",
-		type_aquifere.value_fr AS "Type_d_aquifere",
+		COALESCE(type_captage.value_fr, 'Captee.Indetermine') AS "Type_de_captage",
+		COALESCE(type_aquifere.value_fr, 'Indetermine') AS "Type_d_aquifere",
 		CASE
 			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
 			ELSE aept.value_fr 
@@ -22,10 +21,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 			ELSE interet_public.value_fr 
 		END AS "Interet_public",
 		qwat_ext_ch_aeptc_type_source AS "Type_de_source", --type de source considéré (exsurgence, puits artésien, etc.) ou son mode de fonctionnement (source pérenne,intermittente, périodique, etc.).
-		CASE 
-			WHEN flow_lowest IS NULL THEN -1 
-			ELSE flow_lowest 
-		END AS "Debit_min",
+		COALESCE(flow_lowest, -1) AS "Debit_min",
 		flow_average  AS "Debit_moy",
 		qwat_ext_ch_aeptc_debit_max AS "Debit_max",
 		CASE
@@ -50,8 +46,21 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet interet_public on source.qwat_ext_ch_aeptc_interet_public = interet_public.id
 	LEFT JOIN qwat_vl.watertype watertype ON installation.fk_watertype = watertype.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE source.id IS NOT NULL;
+	WHERE source.id IS NOT NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.source TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.source TO qwat_user;

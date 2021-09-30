@@ -6,19 +6,19 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de captages
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie",
-		aept.value_fr AS "Approvisionnement_en_temps_de_crise",
+		COALESCE(aept.value_fr, 'Indetermine') AS "Approvisionnement_en_temps_de_crise",
 		CASE
 			WHEN installation.fk_watertype = 1502 THEN 'Oui'
 			ELSE 'Non'
 		END AS "Eau_potable",
-		-- Attributs captages surface
+		-- Attributs captages surfacea
 		CASE
 			WHEN source.fk_source_type = 2701 THEN 'Captage_lac'
 			WHEN source.fk_source_type = 2704 THEN 'Captage_cours_d_eau'
 		END AS "Type_de_captage",
-		utilistation.value_fr AS "Utilisation",
+		COALESCE(utilistation.value_fr, 'Indetermine') AS "Utilisation",
 		flow_concession AS "Debit_de_concession"
 
 	FROM qwat_od.installation installation
@@ -27,9 +27,22 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on source.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_vl.aeptc_utilisation utilistation on source.qwat_ext_ch_aeptc_utilisation = utilistation.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE source.fk_source_type = 2701 --captage lac
-	OR source.fk_source_type = 2704; --captage cours eau
+	OR source.fk_source_type = 2704 --captage cours eau
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.captage_d_eaux_de_surface TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.captage_d_eaux_de_surface TO qwat_user;
