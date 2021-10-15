@@ -15,7 +15,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 		END AS "Eau_potable",
 		-- Attributs captages souterrain
 		source.qwat_ext_ch_aeptc_souterrain_diametre AS "Diametre",
-		COALESCE(type_captage.value_fr, 'Captee.Indetermine') AS "Type_de_captage",
+		COALESCE(type_captage.value_fr, 'Autre') AS "Type_de_captage",
 		COALESCE(utilisation.value_fr, 'Indetermine') AS "Utilisation",
 		flow_concession AS "Debit_de_concession"
 	FROM qwat_od.installation installation
