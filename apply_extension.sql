@@ -208,46 +208,73 @@ ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_descriptif_pompe varchar(2
 ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_traitement integer references qwat_vl.aeptc_oui_non_indet(id);
 ALTER TABLE qwat_od.pump ADD COLUMN qwat_ext_ch_aeptc_remarque varchar(1000);
 
+
 CREATE OR REPLACE VIEW qwat_ch_aeptc.autres_installations AS
 
 	-- Chambres
 	SELECT
 		-- AEPT Attributs de base
-		node.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		chamber.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- autres_installations
 		'Chambre_vanne' AS "Type",
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie"
 	FROM qwat_od.installation
 	LEFT JOIN qwat_od.chamber chamber on installation.id = chamber.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on chamber.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE chamber.id IS NOT NULL AND chamber.qwat_ext_ch_aeptc_type_chambre_captage IS NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	) AND fk_watertype = 1502
 
 	UNION
 
 	-- Puits
 	SELECT
 		-- AEPT Attributs de base
-		node.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		puit.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- autres_installations
 		puit_type.value_fr AS "Type",
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie"
 	FROM qwat_od.installation
 	LEFT JOIN qwat_ch_aeptc.puit puit on installation.id = puit.id
 	LEFT JOIN qwat_vl.aeptc_puit_type puit_type on puit.fk_type_puit = puit_type.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on puit.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE puit.id IS NOT NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	) AND fk_watertype = 1502
 
 	UNION
 
@@ -260,18 +287,32 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.autres_installations AS
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- autres_installations
 		'Soupape_regulation_pression' AS "Type",
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie"
 	FROM qwat_od.installation
 	LEFT JOIN qwat_od.pressurecontrol pressurecontrol on installation.id = pressurecontrol.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on pressurecontrol.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE pressurecontrol.fk_pressurecontrol_type IN (2801, 2802);
+	WHERE pressurecontrol.fk_pressurecontrol_type IN (2801, 2802)
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	) AND fk_watertype = 1502;
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.autres_installations TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.autres_installations TO qwat_user;
 GRANT ALL ON TABLE qwat_ch_aeptc.autres_installations TO qwat_manager;
+
 
 CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 	SELECT
@@ -282,10 +323,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		--  Attributs de Canalisation
 		st_force2d(pipe.geometry) AS "Geometrie",
-		CASE
-			WHEN pipe_material.diameter_nominal IS NOT NULL THEN pipe_material.diameter_nominal
-			ELSE -1
-		END AS "Largeur_nominale" --  en mm
+		COALESCE(pipe_material.diameter_nominal, diameter::int, -1) AS "Largeur_nominale" --  en mm
 	FROM qwat_od.pipe pipe
 	LEFT JOIN qwat_vl.pipe_material pipe_material on pipe.fk_material = pipe_material.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on pipe.fk_pressurezone = pressurezone.id
@@ -307,8 +345,8 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.canalisation AS
 		--4112,--  "Ventilation"
 	) AND fk_status IN (
 		--101, -- "autre"
-		--102, -- "inconnu"
-		--103, -- "à déterminer"
+		102, -- "inconnu"
+		103, -- "à déterminer"
 		1301 -- "en service"
 		--1302, -- "hors service"
 		--1303, -- "désaffecté"
@@ -322,28 +360,27 @@ GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.canalisation TO qwat_vi
 GRANT ALL ON TABLE qwat_ch_aeptc.canalisation TO qwat_user;
 GRANT ALL ON TABLE qwat_ch_aeptc.canalisation TO qwat_manager;
 
-
 CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de captages
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie",
-		aept.value_fr AS "Approvisionnement_en_temps_de_crise",
+		COALESCE(aept.value_fr, 'Indetermine') AS "Approvisionnement_en_temps_de_crise",
 		CASE
 			WHEN installation.fk_watertype = 1502 THEN 'Oui'
 			ELSE 'Non'
 		END AS "Eau_potable",
-		-- Attributs captages surface
+		-- Attributs captages surfacea
 		CASE
 			WHEN source.fk_source_type = 2701 THEN 'Captage_lac'
 			WHEN source.fk_source_type = 2704 THEN 'Captage_cours_d_eau'
 		END AS "Type_de_captage",
-		utilistation.value_fr AS "Utilisation",
+		COALESCE(utilistation.value_fr, 'Indetermine') AS "Utilisation",
 		flow_concession AS "Debit_de_concession"
 
 	FROM qwat_od.installation installation
@@ -352,34 +389,48 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on source.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_vl.aeptc_utilisation utilistation on source.qwat_ext_ch_aeptc_utilisation = utilistation.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE source.fk_source_type = 2701 --captage lac
-	OR source.fk_source_type = 2704; --captage cours eau
+	OR source.fk_source_type = 2704 --captage cours eau
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.captage_d_eaux_de_surface TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.captage_d_eaux_de_surface TO qwat_user;
 GRANT ALL ON TABLE qwat_ch_aeptc.captage_d_eaux_de_surface TO qwat_manager;
+
+
 CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de captages
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie",
-		aept.value_fr AS "Approvisionnement_en_temps_de_crise",
+		COALESCE(aept.value_fr, 'Indetermine') AS "Approvisionnement_en_temps_de_crise",
 		CASE
 			WHEN installation.fk_watertype = 1502 THEN 'Oui'
 			ELSE 'Non'
 		END AS "Eau_potable",
 		-- Attributs captages souterrain
 		source.qwat_ext_ch_aeptc_souterrain_diametre AS "Diametre",
-		type_captage.value_fr AS "Type_de_captage",
-		utilisation.value_fr AS "Utilisation",
+		COALESCE(type_captage.value_fr, 'Autre') AS "Type_de_captage",
+		COALESCE(utilisation.value_fr, 'Indetermine') AS "Utilisation",
 		flow_concession AS "Debit_de_concession"
-
 	FROM qwat_od.installation installation
 	LEFT JOIN qwat_od.source source on installation.id = source.id
 	LEFT JOIN qwat_vl.aeptc_type_captage_souterrain type_captage on source.qwat_ext_ch_aeptc_type_captage_souterrain = type_captage.id
@@ -387,36 +438,47 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on source.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_vl.aeptc_utilisation utilisation on source.qwat_ext_ch_aeptc_utilisation = utilisation.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE source.fk_source_type = 2702; --captage eau nappe
+	WHERE source.fk_source_type IN (2702) --captage eau nappe
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.captage_d_eaux_souterraines TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.captage_d_eaux_souterraines TO qwat_user;
 GRANT ALL ON TABLE qwat_ch_aeptc.captage_d_eaux_souterraines TO qwat_manager;
 
+
 CREATE OR REPLACE VIEW qwat_ch_aeptc.chambre_de_captage AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		chamber.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de captages
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		st_force2d(node.geometry) AS "Geometrie",
-		aept.value_fr AS "Approvisionnement_en_temps_de_crise",
+		COALESCE(aept.value_fr, 'Indetermine') AS "Approvisionnement_en_temps_de_crise",
 		CASE
 			WHEN installation.fk_watertype = 1502 THEN 'Oui'
 			ELSE 'Non'
 		END AS "Eau_potable",
 		-- Attributs chambre de captage
-		CASE 
-			WHEN qwat_ext_ch_aeptc_rendement_min IS NULL THEN -1
-			ELSE qwat_ext_ch_aeptc_rendement_min
-		END AS "Rendement_min",
+		COALESCE(qwat_ext_ch_aeptc_rendement_min, -1) AS "Rendement_min",
 		qwat_ext_ch_aeptc_rendement_moy AS "Rendement_moy",
 		qwat_ext_ch_aeptc_rendement_max AS "Rendement_max",
-		type_chambre_captage.value_fr AS "Type_de_captage"
+		COALESCE(type_chambre_captage.value_fr, 'Indetermine') AS "Type_de_captage"
 
 	FROM qwat_od.installation installation
 	LEFT JOIN qwat_od.chamber chamber on installation.id = chamber.id
@@ -424,8 +486,21 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.chambre_de_captage AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on chamber.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_vl.aeptc_type_chambre_captage type_chambre_captage on chamber.qwat_ext_ch_aeptc_type_chambre_captage = type_chambre_captage.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE type_chambre_captage.id IS NOT NULL;
+	WHERE type_chambre_captage.id IS NOT NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	) AND fk_watertype = 1502;
 	
 	
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.chambre_de_captage TO qwat_viewer;
@@ -435,19 +510,16 @@ GRANT ALL ON TABLE qwat_ch_aeptc.chambre_de_captage TO qwat_manager;
 CREATE OR REPLACE VIEW qwat_ch_aeptc.installation_de_transport AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		installation_transport.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de Installation_de_transport
-		alimentation.value_fr AS "Alimentation_electrique_de_secours",
+		COALESCE(alimentation.value_fr, 'Autre') AS "Alimentation_electrique_de_secours",
 		type.value_fr AS "Type",
-		traitement.value_fr AS "Traitement",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
 		qwat_ext_ch_aeptc_puissance_continue AS "Puissance_continue",
-		CASE 
-			WHEN rejected_flow IS NULL THEN -1 
-			ELSE -rejected_flow 
-		END AS "Volume_transporte",
+		COALESCE(rejected_flow,-1) AS "Volume_transporte",
 		st_force2d(node.geometry) AS "Geometrie",
 		qwat_ext_ch_aeptc_puissance_max AS "Puissance_max",
 		no_pumps AS "Nbre_de_pompes",
@@ -458,8 +530,21 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.installation_de_transport AS
 	LEFT JOIN qwat_vl.aeptc_installation_transport_type type on installation_transport.qwat_ext_ch_type_installation_transport = type.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on installation_transport.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE installation_transport.id IS NOT NULL;
+	WHERE installation_transport.id IS NOT NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	) AND fk_watertype = 1502;
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.installation_de_transport TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.installation_de_transport TO qwat_user;
@@ -468,33 +553,37 @@ GRANT ALL ON TABLE qwat_ch_aeptc.installation_de_transport TO qwat_manager;
 CREATE OR REPLACE VIEW qwat_ch_aeptc.reservoir AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		tank.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- Attributs de Reservoir
-		alimentation.value_fr AS "Alimentation_electrique_de_secours",
-		traitement.value_fr AS "Traitement",
-		CASE 
-			WHEN storage_supply IS NULL THEN -1 
-			ELSE storage_supply
-		END AS "Reserve_d_utilisation",
+		COALESCE(alimentation.value_fr, 'Autre') AS "Alimentation_electrique_de_secours",
+		COALESCE(traitement.value_fr, 'Indetermine') AS "Traitement",
+		COALESCE(storage_supply, -1) AS "Reserve_d_utilisation",
 		st_force2d(node.geometry) AS "Geometrie",
-		CASE 
-			WHEN storage_fire IS NULL THEN -1
-			ELSE storage_fire
-		END AS "Reserve_d_extinction",
-		CASE 
-			WHEN altitude_overflow IS NULL THEN -1
-			ELSE altitude_overflow
-		END AS "Niveau_max_de_la_surface_de_l_eau"
+		COALESCE(storage_fire, -1) AS "Reserve_d_extinction",
+		COALESCE(altitude_overflow, -1) AS "Niveau_max_de_la_surface_de_l_eau"
 	FROM qwat_od.installation installation
 	LEFT JOIN qwat_od.tank tank on installation.id = tank.id
 	LEFT JOIN qwat_vl.aeptc_alimentation_electrique_alternative alimentation on tank.qwat_ext_ch_aeptc_alimentation_electrique_de_secours = alimentation.id
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet traitement on tank.qwat_ext_ch_aeptc_traitement = traitement.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE tank.id IS NOT NULL;
+	WHERE tank.id IS NOT NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	) AND fk_watertype = 1502;
 	
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.reservoir TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.reservoir TO qwat_user;
@@ -503,14 +592,13 @@ GRANT ALL ON TABLE qwat_ch_aeptc.reservoir TO qwat_manager;
 CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
 		-- sources
-		
-		type_captage.value_fr AS "Type_de_captage",
-		type_aquifere.value_fr AS "Type_d_aquifere",
+		COALESCE(type_captage.value_fr, 'Captee.Indetermine') AS "Type_de_captage",
+		COALESCE(type_aquifere.value_fr, 'Indetermine') AS "Type_d_aquifere",
 		CASE
 			WHEN type_captage.value_fr = 'Pas_captee' THEN NULL
 			ELSE aept.value_fr 
@@ -524,10 +612,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 			ELSE interet_public.value_fr 
 		END AS "Interet_public",
 		qwat_ext_ch_aeptc_type_source AS "Type_de_source", --type de source considéré (exsurgence, puits artésien, etc.) ou son mode de fonctionnement (source pérenne,intermittente, périodique, etc.).
-		CASE 
-			WHEN flow_lowest IS NULL THEN -1 
-			ELSE flow_lowest 
-		END AS "Debit_min",
+		COALESCE(flow_lowest, -1) AS "Debit_min",
 		flow_average  AS "Debit_moy",
 		qwat_ext_ch_aeptc_debit_max AS "Debit_max",
 		CASE
@@ -552,8 +637,21 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	LEFT JOIN qwat_vl.aeptc_oui_non_indet interet_public on source.qwat_ext_ch_aeptc_interet_public = interet_public.id
 	LEFT JOIN qwat_vl.watertype watertype ON installation.fk_watertype = watertype.id
 	LEFT JOIN qwat_od.node on installation.id = node.id
+	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE source.id IS NOT NULL;
+	WHERE source.id IS NOT NULL
+	AND fk_status IN (
+		--101, -- "autre"
+		102, -- "inconnu"
+		103, -- "à déterminer"
+		1301 -- "en service"
+		--1302, -- "hors service"
+		--1303, -- "désaffecté"
+		--1304, -- "abandonné"
+		--1305, -- "détruit"
+		--1306, -- "projet"
+		--1307, -- "fictif"
+	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.source TO qwat_viewer;
 GRANT ALL ON TABLE qwat_ch_aeptc.source TO qwat_user;

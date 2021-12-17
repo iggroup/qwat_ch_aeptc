@@ -1,7 +1,7 @@
 CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
@@ -27,7 +27,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_souterraines AS
 	LEFT JOIN qwat_od.node on installation.id = node.id
 	LEFT JOIN qwat_od.network_element network_element on installation.id = network_element.id
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
-	WHERE source.fk_source_type IN (2702, 2703) --captage eau nappe, captage eau source
+	WHERE source.fk_source_type IN (2702) --captage eau nappe: les captage d'eau de source sont liées à des chambres de captages
 	AND fk_status IN (
 		--101, -- "autre"
 		102, -- "inconnu"

@@ -3,7 +3,7 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.autres_installations AS
 	-- Chambres
 	SELECT
 		-- AEPT Attributs de base
-		node.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		chamber.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",

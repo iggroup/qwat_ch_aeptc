@@ -1,7 +1,7 @@
 CREATE OR REPLACE VIEW qwat_ch_aeptc.captage_d_eaux_de_surface AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		source.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",

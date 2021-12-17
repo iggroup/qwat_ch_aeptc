@@ -1,7 +1,7 @@
 CREATE OR REPLACE VIEW qwat_ch_aeptc.installation_de_transport AS
 	SELECT
 		-- AEPT Attributs de base
-		installation.id AS "Identificateur",
+		COALESCE(network_element.identification, installation.id::character varying) AS "Identificateur",
 		installation.name AS "Nom",
 		installation_transport.qwat_ext_ch_aeptc_remarque AS "Remarque",
 		pressurezone.name AS "Identificateur_de_la_partie_de_reseau",
