@@ -50,16 +50,16 @@ CREATE OR REPLACE VIEW qwat_ch_aeptc.source AS
 	LEFT JOIN qwat_od.pressurezone pressurezone on node.fk_pressurezone = pressurezone.id
 	WHERE source.id IS NOT NULL
 	AND fk_status IN (
-		--101, -- "autre"
+		101, -- "autre"
 		102, -- "inconnu"
 		103, -- "à déterminer"
 		1301 -- "en service"
-		--1302, -- "hors service"
-		--1303, -- "désaffecté"
-		--1304, -- "abandonné"
-		--1305, -- "détruit"
-		--1306, -- "projet"
-		--1307, -- "fictif"
+		1302, -- "hors service"
+		1303, -- "désaffecté"
+		1304, -- "abandonné"
+		1305, -- "détruit"
+		1306, -- "projet"
+		1307, -- "fictif"
 	);
 
 GRANT SELECT, REFERENCES, TRIGGER ON TABLE qwat_ch_aeptc.source TO qwat_viewer;
